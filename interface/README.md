@@ -1,32 +1,43 @@
-# React + TypeScript + Vite
+# Interface web do Quiz de Redes
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interface gráfica (React + TypeScript) do quiz. É um extra: o trabalho funciona só com `servidor.py` e `cliente.py`.
 
-Currently, two official plugins are available:
+O navegador não abre socket TCP nem UDP, só WebSocket. Por isso a página conversa com a `ponte/ponte.py`, e a ponte conversa com o `servidor.py`:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+    navegador  <-- WebSocket (JSON) -->  ponte.py  <-- TCP + UDP -->  servidor.py
 
-## React Compiler
+## Como rodar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Com o `servidor.py` e a `ponte.py` já rodando:
 
-## Expanding the Oxlint configuration
+    npm install     (só na primeira vez; cria a pasta node_modules)
+    npm run dev     (abre em http://localhost:5173)
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Ou tudo de uma vez pelo Docker, a partir da raiz do projeto: `docker compose up --build`.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## O código (pasta src/)
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Arquivo | O que faz |
+|---|---|
+| `main.tsx` | Ponto de entrada: coloca o `App` dentro da página. |
+| `App.tsx` | Decide qual tela mostrar: Entrar ou Pergunta. |
+| `useServidor.ts` | Abre o WebSocket com a ponte, envia os comandos e guarda o estado do jogo. É o equivalente do `cliente.py`. |
+| `types.ts` | Formato das mensagens JSON trocadas com a ponte. |
+| `telas/Entrar.tsx` | Tela inicial: IP do servidor e nome do jogador. |
+| `telas/Pergunta.tsx` | Tela do jogo: sala de espera, pergunta, resultado da rodada e placar final. |
+| `componentes/Alternativa.tsx` | Botão de uma alternativa (A, B, C, D). |
+| `componentes/BarraProgresso.tsx` | Barra que mostra a rodada atual de 10. |
+| `index.css` | Cores e estilo de todas as telas. |
+
+## Arquivos de configuração (não precisa mexer)
+
+| Arquivo | O que faz |
+|---|---|
+| `index.html` | A página em si: uma `<div id="root">` vazia, que o React preenche. |
+| `package.json` | Lista as dependências (React, Vite, TypeScript) e os comandos `npm run dev` e `npm run build`. |
+| `package-lock.json` | Gerado pelo npm: trava as versões exatas das dependências. Não se edita à mão. |
+| `vite.config.ts` | Configuração do Vite, a ferramenta que serve a página no `npm run dev`. |
+| `tsconfig.json` | Configuração do TypeScript (o verificador de tipos). |
+| `public/favicon.svg` | Ícone que aparece na aba do navegador. |
+| `node_modules/` | Dependências baixadas pelo `npm install`. Não vai para o Git. |
+| `dist/` | Site pronto, gerado pelo `npm run build`. Não vai para o Git. |
