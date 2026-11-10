@@ -2,6 +2,18 @@
 
 Este roteiro **complementa** o `ROTEIRO_DE_TESTES.md`. Você executa os mesmos testes, mas com o Wireshark capturando, para entregar o arquivo `.pcapng` e mostrar na prática o TCP e o UDP funcionando.
 
+**Como preencher:** nas colunas **Achei?** e **Resultado**, escreva `OK` e, se quiser, o número do pacote na captura.
+
+## Sumário
+
+1. [Preparação da captura](#1-preparação-da-captura)
+2. [Execução](#2-execução)
+3. [O que procurar na captura](#3-o-que-procurar-na-captura) (W1 a W12)
+4. [O que cada achado prova](#4-o-que-cada-achado-prova)
+5. [Teste extra: mensagem TCP partida](#5-teste-extra-mensagem-tcp-partida-no-wireshark) (W13)
+6. [Entre computadores](#6-entre-computadores)
+7. [Entrega](#7-entrega)
+
 ---
 
 ## 1. Preparação da captura
@@ -33,7 +45,12 @@ Para ler o conteúdo de uma mensagem: clique no pacote, depois **botão direito 
 ## 2. Execução
 
 1. Faça a captura começar.
-2. Inicie o servidor: `cd servidor && rm -f servidor.log && python servidor.py`.
+2. Inicie o servidor, a partir da raiz do projeto:
+
+   ```bash
+   cd servidor && rm -f servidor.log && python servidor.py
+   ```
+
 3. Execute o `ROTEIRO_DE_TESTES.md` com os 3 clientes (`python cliente.py`).
 4. No mínimo, passe por: entrada dos 3 jogadores, `INICIAR`, uma rodada completa, uma resposta duplicada, uma entrada inválida e a saída de um cliente.
 5. Pare a captura (botão quadrado vermelho).

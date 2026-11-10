@@ -6,6 +6,33 @@ Este roteiro cobre tudo que o enunciado do Trabalho Prático 2 pede para demonst
 
 > **Dica:** use o `cliente.py` (terminal) para os testes. Ele deixa você mandar comandos inválidos, o que a interface web não permite. A interface web é um extra.
 
+**Como preencher a coluna Resultado:** escreva `OK` se aconteceu o esperado, ou anote o que apareceu de diferente.
+
+| | |
+|---|---|
+| **Data do teste** | |
+| **Quem testou** | |
+| **Sistema e versão do Python** | |
+| **Mesma máquina ou entre computadores** | |
+
+## Sumário
+
+| Seção | Testes |
+|---|---|
+| [1. Preparação](#1-preparação) | |
+| [2. Cadastro e início](#2-testes-de-cadastro-e-início) | 1 a 6b |
+| [3. Rodada](#3-testes-de-rodada-demonstração-obrigatória) | 7 a 16 |
+| [4. Entrada inválida](#4-testes-de-entrada-inválida-demonstração-obrigatória) | 17 a 21 |
+| [5. Desconexão](#5-teste-de-desconexão-demonstração-obrigatória) | 22 a 24 |
+| [6. Mensagem TCP partida](#6-teste-do-tcp-com-mensagem-partida-em-dois-pedaços) | 25 e 26 |
+| [7. Fim de jogo e placar final](#7-fim-de-jogo-e-placar-final) | 27 a 29 |
+| [8. UDP é só um aviso](#8-o-udp-é-só-um-aviso-tcp-é-a-fonte-oficial) | 30 e 31 |
+| [9. Conferência do log](#9-conferência-do-log) | |
+| [10. Entre computadores (opcional)](#10-entre-computadores-opcional) | |
+| [11. Interface web (extra)](#11-rodando-com-a-interface-web-extra) | |
+| [12. O que entregar](#12-o-que-entregar) | |
+| [13. Limitações conhecidas](#13-limitações-conhecidas-para-mencionar-se-perguntarem) | |
+
 ---
 
 ## 1. Preparação
@@ -14,8 +41,10 @@ Este roteiro cobre tudo que o enunciado do Trabalho Prático 2 pede para demonst
 
 Apague o log antigo, porque o servidor acrescenta linhas ao arquivo em vez de recriá-lo.
 
+A partir da raiz do projeto:
+
 ```bash
-cd ~/Projects/Trabalho_de_Redes/servidor
+cd servidor
 rm -f servidor.log
 python servidor.py
 ```
@@ -24,10 +53,10 @@ Deve aparecer: `10 perguntas carregadas` e `Servidor TCP aguardando conexão...`
 
 ### 1.2 Iniciar os clientes
 
-Abra **um terminal por jogador** (mínimo 3):
+Abra **um terminal por jogador** (mínimo 3), também a partir da raiz do projeto:
 
 ```bash
-cd ~/Projects/Trabalho_de_Redes/servidor
+cd servidor
 python cliente.py
 ```
 
@@ -160,7 +189,7 @@ Se um datagrama UDP se perder, o jogador continua conseguindo consultar tudo por
 
 ## 9. Conferência do log
 
-Abra o `servidor.log` ao final:
+Abra o `servidor.log` ao final (ele fica na pasta `servidor/`):
 
 ```bash
 cat servidor.log
@@ -186,22 +215,26 @@ O enunciado prefere testes entre máquinas. Se possível:
 
 ## 11. Rodando com a interface web (extra)
 
-Não faz parte do que o enunciado exige.
+Não faz parte do que o enunciado exige. A partir da raiz do projeto:
 
 ```bash
-cd ~/Projects/Trabalho_de_Redes && sudo docker compose up --build
+docker compose up --build
 ```
 
+No Linux, pode ser preciso `sudo` na frente.
+
 Abra `http://localhost:5173` em 3 abas. No campo de IP, digite `servidor`. Em outra máquina, abra `http://IP_DA_ANFITRIA:5173`.
+
+Para rodar sem Docker, veja a seção 11 do `README.md` principal.
 
 ---
 
 ## 12. O que entregar
 
-- [ ] `servidor.py`, `cliente.py` e `perguntas.txt`
+- [ ] `servidor.py`, `cliente.py` e `perguntas.txt` (pasta `servidor/`)
 - [ ] `README.md` com os campos `[PREENCHER]` resolvidos e os nomes de todos os integrantes
 - [ ] Este roteiro, com a coluna **Resultado** preenchida (é o relatório de testes)
-- [ ] `servidor.log` de uma execução com 3 clientes
+- [ ] `servidor.log` de uma execução com 3 clientes (fica em `servidor/` e não vai para o Git)
 - [ ] Captura do Wireshark (`.pcapng`), feita com o `ROTEIRO_WIRESHARK.md`
 
 ---
