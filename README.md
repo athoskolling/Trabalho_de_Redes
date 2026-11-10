@@ -20,7 +20,7 @@ cliente.py: cliente de texto (terminal).
 perguntas.txt: 10 perguntas, uma por linha, no formato pergunta|alt1|alt2|alt3|alt4|correta (correta é um número de 1 a 4). Deve ficar na mesma pasta do servidor.py.
 servidor.log: criado pelo servidor ao rodar (log da execução).
 
-Extras, fora do que o enunciado exige (seção 11): ponte/ponte.py, a pasta interface/ e os arquivos do Docker (docker-compose.yml e Dockerfile.*).
+Extras, fora do que o enunciado exige (seção 11): ponte/ponte.py, a pasta interface/ e os arquivos do Docker (docker-compose.yml na raiz e um Dockerfile em cada pasta).
 
 
 3. COMO EXECUTAR
@@ -218,4 +218,4 @@ Sem Docker, em três terminais, a partir da raiz do projeto:
 
 A ponte escuta em localhost por padrão. Para aceitar navegadores de outras máquinas (é o que o Docker faz), defina a variável de ambiente HOST_PONTE=0.0.0.0 antes de iniciá-la.
 
-O arquivo interface/README.md explica o que faz cada arquivo da interface.
+Os roteiros de teste e de captura no Wireshark ficam na pasta roteiros/. O arquivo interface/README.md explica o que faz cada arquivo da interface.

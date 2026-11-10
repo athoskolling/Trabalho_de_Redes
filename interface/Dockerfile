@@ -1,8 +1,8 @@
 FROM node:24-alpine
 WORKDIR /app
-COPY interface/package*.json ./
+COPY package*.json ./
 RUN npm ci
-COPY interface/ .
+COPY . .
 RUN npm run build
 EXPOSE 5173
 CMD ["npx", "vite", "preview", "--host", "--port", "5173"]

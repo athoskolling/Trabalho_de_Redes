@@ -39,5 +39,6 @@ Ou tudo de uma vez pelo Docker, a partir da raiz do projeto: `docker compose up 
 | `vite.config.ts` | Configuração do Vite, a ferramenta que serve a página no `npm run dev`. |
 | `tsconfig.json` | Configuração do TypeScript (o verificador de tipos). |
 | `public/favicon.svg` | Ícone que aparece na aba do navegador. |
+| `Dockerfile` e `.dockerignore` | Receita para rodar a interface no Docker (usada pelo `docker compose`). |
 | `node_modules/` | Dependências baixadas pelo `npm install`. Não vai para o Git. |
 | `dist/` | Site pronto, gerado pelo `npm run build`. Não vai para o Git. |
