@@ -96,6 +96,16 @@ Os avisos de rodada chegam sozinhos na tela, marcados com `[AVISO]`.
 
 > **Atenção:** antes de uma execução oficial, apague o `servidor.log` antigo, porque o servidor acrescenta linhas ao arquivo (não o recria).
 
+### Em várias máquinas
+
+Funciona entre computadores que estejam na **mesma rede** (por exemplo, o Wi-Fi de casa):
+
+1. Rode o `servidor.py` em uma máquina e descubra o IP dela com `ipconfig` (Windows) ou `ip -4 a` (Linux).
+2. Nas outras máquinas, rode o `cliente.py` e digite esse IP no lugar de `127.0.0.1`.
+3. Se não conectar, libere a porta TCP 5000 no firewall da máquina do servidor. Se os `[AVISO]` não chegarem, libere o UDP de entrada nas máquinas dos clientes.
+
+A rede da Unisinos não permite conexão entre máquinas dos alunos, então lá o teste é feito em um computador só, com `127.0.0.1`.
+
 ---
 
 ## 4. Endereços e portas
