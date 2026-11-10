@@ -7,24 +7,29 @@ Integrantes: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele Carvalho, L
 
 Tema: Opção 1, Quiz competitivo em rede.
 Linguagem: Python 3 ([PREENCHER: versão usada nos testes]). Funciona em Python 3.8 ou superior.
-Dependências: nenhuma além da biblioteca padrão (socket, threading, time).
+Dependências: nenhuma além da biblioteca padrão (socket, threading, time). A interface web (extra, seção 11) usa também a biblioteca websockets e o Node.js.
 Sistema usado nos testes: [PREENCHER: Windows ou Linux].
 
 
 2. ARQUIVOS
+
+O servidor e o cliente ficam na pasta servidor/.
 
 servidor.py: servidor. Guarda o estado oficial da partida e grava o log.
 cliente.py: cliente de texto (terminal).
 perguntas.txt: 10 perguntas, uma por linha, no formato pergunta|alt1|alt2|alt3|alt4|correta (correta é um número de 1 a 4). Deve ficar na mesma pasta do servidor.py.
 servidor.log: criado pelo servidor ao rodar (log da execução).
 
+Extras, fora do que o enunciado exige (seção 11): ponte/ponte.py, a pasta interface/ e os arquivos do Docker (docker-compose.yml e Dockerfile.*).
+
 
 3. COMO EXECUTAR
 
-1) Abra um terminal na pasta do projeto e inicie o servidor:
+1) Abra um terminal na pasta servidor/ e inicie o servidor:
+   cd servidor
    python servidor.py
 
-2) Em outros terminais (um por jogador, mínimo 3), inicie os clientes:
+2) Em outros terminais (um por jogador, mínimo 3), também na pasta servidor/, inicie os clientes:
    python cliente.py
    O cliente pergunta o IP do servidor (use 127.0.0.1 se estiver no mesmo computador) e o nome do jogador (pode ter espaços).
 
@@ -189,3 +194,28 @@ Mudanças de estado registradas: entrada e saída de jogador, início da partida
 10. ENTREGA
 
 O ZIP contém servidor.py, cliente.py, perguntas.txt, este README, o relatório de testes, o log de uma execução com 3 clientes e a captura do Wireshark (.pcapng, interface de loopback quando o teste é local).
+
+
+11. INTERFACE WEB (EXTRA)
+
+Não faz parte do que o enunciado exige. O servidor.py e o protocolo são os mesmos; a interface é só outro cliente.
+
+O navegador não abre socket TCP nem UDP, só WebSocket. Por isso existe a ponte (ponte/ponte.py): para cada aba do navegador ela abre um TCP e um UDP até o servidor, como o cliente.py faz, e traduz as mensagens para JSON.
+
+  navegador <- WebSocket (JSON) -> ponte.py <- TCP + UDP -> servidor.py
+
+Portas: a ponte escuta em 8765 (WebSocket) e a página é servida em 5173.
+
+Com Docker, a partir da raiz do projeto:
+  docker compose up --build
+  Abra http://localhost:5173 em 3 abas. No campo de IP do servidor, digite: servidor
+
+Sem Docker, em três terminais, a partir da raiz do projeto:
+  cd servidor && python servidor.py
+  pip install websockets && python ponte/ponte.py
+  cd interface && npm install && npm run dev
+  Abra http://localhost:5173 em 3 abas. No campo de IP do servidor, digite: 127.0.0.1
+
+A ponte escuta em localhost por padrão. Para aceitar navegadores de outras máquinas (é o que o Docker faz), defina a variável de ambiente HOST_PONTE=0.0.0.0 antes de iniciá-la.
+
+O arquivo interface/README.md explica o que faz cada arquivo da interface.

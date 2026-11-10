@@ -6,7 +6,7 @@
 #
 #   navegador  <-- WebSocket (JSON) -->  ponte.py  <-- TCP + UDP (texto) -->  servidor.py
 #
-# Executar:  .venv/bin/python ponte.py     (o servidor.py precisa estar rodando)
+# Executar:  python ponte/ponte.py     (precisa de: pip install websockets; o servidor.py precisa estar rodando)
 
 import asyncio
 import json
