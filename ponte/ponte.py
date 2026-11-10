@@ -10,10 +10,13 @@
 
 import asyncio
 import json
+import os
 import websockets
 
 PORTA_SERVIDOR = 5000        # porta TCP do servidor.py
 PORTA_PONTE = 8765           # porta do WebSocket que o navegador usa
+# Endereço onde a ponte escuta: localhost por padrão; no Docker vem 0.0.0.0 pela variável HOST_PONTE
+HOST_PONTE = os.environ.get("HOST_PONTE", "localhost")
 
 
 class AvisosUDP(asyncio.DatagramProtocol):
@@ -191,8 +194,8 @@ async def atender(ws):
 
 async def main():
     """Sobe o servidor WebSocket que o navegador usa."""
-    async with websockets.serve(atender, "localhost", PORTA_PONTE):
-        print(f"Ponte rodando em ws://localhost:{PORTA_PONTE}")
+    async with websockets.serve(atender, HOST_PONTE, PORTA_PONTE):
+        print(f"Ponte rodando em ws://{HOST_PONTE}:{PORTA_PONTE}")
         await asyncio.Future()  # roda para sempre
 
 
