@@ -1,6 +1,6 @@
 QUIZ COMPETITIVO EM REDE
 
-Integrantes: Athos Nunes Kolling, Júlia Roos Costa, [nome dos outros nego]
+Integrantes: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele Carvalho, Luiz Eduardo Haubert
 
 
 1. TEMA, LINGUAGEM E DEPENDENCIAS

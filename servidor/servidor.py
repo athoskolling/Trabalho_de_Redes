@@ -1,5 +1,5 @@
 # Servidor do Quiz Competitivo em Rede.
-# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa [adiciona os nome]
+# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele Carvalho, Luiz Eduardo Haubert
  
 # - TCP (porta 5000): comandos dos jogadores e respostas oficiais do servidor.
 # - UDP: apenas avisos de eventos (RODADA_ABERTA, RODADA_ENCERRADA, FIM_JOGO).
