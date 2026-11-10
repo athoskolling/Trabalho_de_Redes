@@ -1,0 +1,10 @@
+O que o DNS faz?|Traduz nomes de domínio em endereços IP|Envia e-mails|Transfere arquivos|Atribui endereços IP automaticamente|1
+Qual protocolo é usado para a transferência de arquivos entre cliente e servidor?|DNS|FTP|DHCP|SSH|2
+No modelo cliente-servidor, quem solicita os serviços?|O servidor|O roteador|O cliente|O switch|3
+Quantos bits tem um endereço IPv6?|32|64|128|256|3
+Na comunicação full-duplex, como os dados trafegam?|Em apenas uma direção|Nas duas direções, mas nunca ao mesmo tempo|Nas duas direções ao mesmo tempo|Somente do servidor para o cliente|3
+Na comunicação simplex, como os dados trafegam?|Em apenas uma direção|Nas duas direções ao mesmo tempo|Nas duas direções, alternando|Por vários caminhos|1
+Qual código de resposta HTTP significa que a requisição foi bem-sucedida?|200|404|500|503|1
+Qual porta é usada pelo HTTPS?|21|80|443|22|3
+Qual destes serviços oferece conexão com garantia de entrega?|UDP|TCP|DNS|DHCP|2
+Qual função o servidor TCP usa para aceitar uma conexão de cliente?|connect()|sendto()|recvfrom()|accept()|4

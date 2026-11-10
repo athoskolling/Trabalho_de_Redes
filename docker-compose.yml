@@ -1,0 +1,11 @@
+services:
+  servidor:
+    build: { context: ., dockerfile: Dockerfile.servidor }
+    ports: ["5000:5000"]        # só necessário para clientes de terminal fora do Docker
+  ponte:
+    build: { context: ., dockerfile: Dockerfile.ponte }
+    ports: ["8765:8765"]        # o navegador conecta aqui
+    depends_on: [servidor]
+  interface:
+    build: { context: ., dockerfile: Dockerfile.interface }
+    ports: ["5173:5173"]
