@@ -13,15 +13,17 @@ interface Props {
   onSair: () => void
 }
 
+// Contagem regressiva local: começa no tempo que o servidor informou e desce 1 por segundo
 function Contagem({ segundos }: { segundos: number }) {
   const [restante, setRestante] = useState(segundos)
   useEffect(() => {
     const t = setInterval(() => setRestante(r => Math.max(0, r - 1)), 1000)
-    return () => clearInterval(t)
+    return () => clearInterval(t)   // para o relógio quando o componente sai da tela
   }, [])
   return <span className="tempo">{restante}s</span>
 }
 
+// Tela do jogo: sala de espera, pergunta, resultado da rodada e placar final
 export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Props) {
   const { pergunta, resultado, fim, placar, nome, organizador, iniciada, erro, escolhida } = estado
   // a seleção local vale só para a rodada em que foi feita
@@ -41,12 +43,14 @@ export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Pro
       <BarraProgresso atual={fim ? TOTAL_RODADAS : rodada} total={TOTAL_RODADAS} />
 
       <div className="card">
+        {/* rodada aberta: pergunta, alternativas e botão Responder */}
         {pergunta && (
           <>
             <p className="rotulo">Pergunta {pergunta.rodada}</p>
             <h2>{pergunta.texto}</h2>
             {pergunta.alternativas.map((texto, i) => {
               const n = i + 1
+              // depois de enviada, a resposta não pode mais ser trocada
               const enviada = escolhida !== null
               const alvo = enviada ? escolhida : marcada
               return (
@@ -66,6 +70,7 @@ export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Pro
           </>
         )}
 
+        {/* rodada encerrada: resposta correta e placar */}
         {!pergunta && resultado && !fim && (
           <>
             <p className="rotulo">Resultado da rodada {resultado.rodada}</p>
@@ -80,6 +85,7 @@ export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Pro
           </>
         )}
 
+        {/* fim de jogo: vencedores e placar final */}
         {fim && (
           <>
             <p className="rotulo">Fim de jogo</p>
@@ -89,6 +95,7 @@ export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Pro
           </>
         )}
 
+        {/* antes do início: só o organizador vê o botão Iniciar */}
         {!iniciada && !pergunta && (
           <>
             <p className="rotulo">Sala de espera</p>
@@ -110,6 +117,7 @@ export default function Pergunta({ estado, onIniciar, onResponder, onSair }: Pro
   )
 }
 
+// Lista de pontuação, do maior para o menor, destacando o próprio jogador
 function Placar({ placar, nome }: { placar: { nome: string; pontos: number }[]; nome: string }) {
   const ordenado = [...placar].sort((a, b) => b.pontos - a.pontos)
   return (

@@ -1,3 +1,6 @@
+// Hook que conversa com a ponte.py por WebSocket e guarda o estado do jogo.
+// Faz na interface web o papel que o cliente.py faz no terminal.
+
 import { useCallback, useEffect, useRef, useState } from "react"
 import type {
   ItemPlacar, MensagemEnviada, MensagemRecebida, Pergunta, Resultado,
@@ -5,6 +8,7 @@ import type {
 
 const URL_PONTE = `ws://${location.hostname}:8765`   // mesma máquina que serve a página
 
+// Texto mostrado na tela para cada código de erro
 export const MENSAGENS_ERRO: Record<string, string> = {
   servidor_indisponivel: "Não foi possível conectar ao servidor. Confira o IP.",
   servidor_desconectado: "O servidor caiu.",
@@ -19,6 +23,7 @@ export const MENSAGENS_ERRO: Record<string, string> = {
   mensagem_invalida: "Mensagem inválida.",
 }
 
+// Tudo que as telas precisam saber sobre a partida
 export interface Estado {
   entrou: boolean
   nome: string
@@ -32,6 +37,7 @@ export interface Estado {
   erro: string | null
 }
 
+// Estado antes de entrar na partida
 const inicial: Estado = {
   entrou: false, nome: "", organizador: false, iniciada: false,
   pergunta: null, escolhida: null, resultado: null, placar: [],
@@ -39,10 +45,11 @@ const inicial: Estado = {
 }
 
 export function useServidor() {
-  const ws = useRef<WebSocket | null>(null)
-  const ultimaEscolha = useRef<number | null>(null)
+  const ws = useRef<WebSocket | null>(null)              // conexão com a ponte
+  const ultimaEscolha = useRef<number | null>(null)      // alternativa enviada, esperando o OK
   const [estado, setEstado] = useState<Estado>(inicial)
 
+  // Fecha a conexão com a ponte
   const fechar = useCallback(() => {
     const atual = ws.current
     ws.current = null
@@ -52,12 +59,14 @@ export function useServidor() {
   // fecha o WebSocket ao desmontar
   useEffect(() => fechar, [fechar])
 
+  // Envia uma mensagem JSON para a ponte
   const enviar = useCallback((msg: MensagemEnviada) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(msg))
     }
   }, [])
 
+  // Atualiza o estado conforme a mensagem que chegou da ponte
   const tratar = useCallback((msg: MensagemRecebida) => {
     switch (msg.tipo) {
       case "entrou":
@@ -83,11 +92,13 @@ export function useServidor() {
         }))
         break
       case "ok":
+        // o servidor aceitou a resposta: só agora ela é marcada como enviada
         if (msg.acao === "responder") {
           setEstado(e => ({ ...e, escolhida: ultimaEscolha.current, erro: null }))
         }
         break
       case "erro":
+        // sem servidor não há jogo: volta para a tela de entrada
         if (msg.codigo === "servidor_indisponivel" || msg.codigo === "servidor_desconectado") {
           fechar()
           setEstado({ ...inicial, erro: msg.codigo })
@@ -102,6 +113,7 @@ export function useServidor() {
     }
   }, [fechar])
 
+  // Abre o WebSocket e pede para entrar na partida
   const conectar = useCallback((ip: string, nome: string) => {
     fechar()
     setEstado({ ...inicial, nome })
@@ -109,6 +121,7 @@ export function useServidor() {
     ws.current = socket
     socket.onopen = () => enviar({ tipo: "entrar", ip, nome })
     socket.onmessage = ev => tratar(JSON.parse(ev.data) as MensagemRecebida)
+    // "ws.current === socket" ignora eventos de uma conexão antiga já descartada
     socket.onerror = () => {
       if (ws.current === socket) {
         ws.current = null
@@ -123,13 +136,16 @@ export function useServidor() {
     }
   }, [enviar, fechar, tratar])
 
+  // Organizador: começa a partida
   const iniciar = useCallback(() => enviar({ tipo: "iniciar" }), [enviar])
 
+  // Envia a alternativa escolhida na rodada
   const responder = useCallback((rodada: number, alternativa: 1 | 2 | 3 | 4) => {
     ultimaEscolha.current = alternativa
     enviar({ tipo: "responder", rodada, alternativa })
   }, [enviar])
 
+  // Sai da partida e volta para a tela de entrada
   const sair = useCallback(() => {
     fechar()
     setEstado(inicial)

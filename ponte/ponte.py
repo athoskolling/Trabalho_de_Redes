@@ -60,6 +60,7 @@ class Sessao:
 
     # ---------- mensagens vindas do navegador ----------
     async def entrar(self, ip: str, nome: str):
+        """Abre o TCP e o UDP com o servidor e envia o ENTRAR."""
         try:
             self.leitor, self.escritor = await asyncio.wait_for(
                 asyncio.open_connection(ip, PORTA_SERVIDOR), timeout=5)
@@ -92,6 +93,7 @@ class Sessao:
 
     # ---------- avisos UDP: servidor -> ponte -> navegador ----------
     async def tratar_avisos(self):
+        """Fica esperando avisos UDP e busca por TCP os dados de cada um."""
         while True:
             aviso = await self.fila_avisos.get()
             tipo = aviso.split(" ")[0]
@@ -105,6 +107,7 @@ class Sessao:
                 await self.buscar_placar_final()
 
     async def buscar_pergunta(self):
+        """Pede a pergunta da rodada aberta e entrega ao navegador."""
         # PERGUNTA|<rodada>|<texto>|<alt1>|<alt2>|<alt3>|<alt4>|<segundos>
         resposta = await self.pedir("PERGUNTA")
         campos = resposta.split("|")
@@ -115,6 +118,7 @@ class Sessao:
                            "segundos": int(campos[7])})
 
     async def buscar_resultado(self, rodada: str):
+        """Pede o resultado da rodada encerrada e entrega ao navegador."""
         # RESULTADO|<rodada>|<correta>|<quem_acertou>|<placar>
         resposta = await self.pedir(f"RESULTADO {rodada}")
         campos = resposta.split("|")
@@ -126,6 +130,7 @@ class Sessao:
                            "placar": ler_placar(campos[4])})
 
     async def buscar_placar_final(self):
+        """Pede o placar final com os vencedores e entrega ao navegador."""
         # PLACAR|<nome>:<pontos>,...|FIM|<vencedores>
         resposta = await self.pedir("PLACAR")
         campos = resposta.split("|")
@@ -134,6 +139,7 @@ class Sessao:
                            "vencedores": vencedores})
 
     def fechar(self):
+        """Encerra a sessão: o servidor vê o TCP fechar e marca o jogador como inativo."""
         if self.tarefa_avisos:
             self.tarefa_avisos.cancel()
         if self.escritor:
@@ -184,6 +190,7 @@ async def atender(ws):
 
 
 async def main():
+    """Sobe o servidor WebSocket que o navegador usa."""
     async with websockets.serve(atender, "localhost", PORTA_PONTE):
         print(f"Ponte rodando em ws://localhost:{PORTA_PONTE}")
         await asyncio.Future()  # roda para sempre
