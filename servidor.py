@@ -1,5 +1,5 @@
 # Servidor do Quiz Competitivo em Rede.
-# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa [adiciona os nome]
+# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele e Luiz Haubert
  
 # - TCP (porta 5000): comandos dos jogadores e respostas oficiais do servidor.
 # - UDP: apenas avisos de eventos (RODADA_ABERTA, RODADA_ENCERRADA, FIM_JOGO).
@@ -23,6 +23,7 @@ perguntas = []  # cada item: [texto, alt1, alt2, alt3, alt4, correta]
 resultados = {}  # número da rodada -> mensagem RESULTADO já pronta
 partida_terminou = False
 lock_log = threading.Lock()  # evita linhas misturadas no arquivo de log
+lock_rodada = threading.Lock()  # protege rodada_aberta e respostas (RESPONDER x fechamento da rodada)
  
  
 # ---------- Funções auxiliares ----------
@@ -54,8 +55,12 @@ def enviar_aviso(texto):
     # Envia um aviso UDP a todos os jogadores ativos.
     for j in jogadores:
         if j["ativo"]:
-            udp.sendto(texto.encode("utf-8"), (j["ip"], j["udp_porta"]))
-            registrar("UDP", "ENVIADO", f"{j['ip']}:{j['udp_porta']}", texto.split()[0], texto)
+            try:
+                udp.sendto(texto.encode("utf-8"), (j["ip"], j["udp_porta"]))
+                registrar("UDP", "ENVIADO", f"{j['ip']}:{j['udp_porta']}", texto.split()[0], texto)
+            except (OSError, OverflowError) as erro:
+                # Falha com um jogador não impede os avisos aos outros nem a partida
+                registrar("UDP", "ENVIADO", f"{j['ip']}:{j['udp_porta']}", "ERRO", f"falha ao enviar {texto}: {erro}")
  
  
 def registrar(protocolo, direcao, quem, tipo, conteudo):
@@ -85,17 +90,20 @@ def controlar_partida():
         # Espera até o tempo acabar ou até todos os jogadores ativos responderem
         while time.time() < tempo_fim:
             ativos = sum(1 for j in jogadores if j["ativo"])
-            if len(respostas) >= ativos:
+            respondidos = sum(1 for id_jogador in list(respostas) if jogadores[id_jogador - 1]["ativo"])
+            if respondidos >= ativos:
                 break
             time.sleep(0.2)
  
         # Encerra a rodada e calcula a pontuação (1 ponto por acerto)
-        rodada_aberta = False
-        acertaram = []
-        for id_jogador in list(respostas):
-            if respostas[id_jogador] == perguntas[n - 1][5]:
-                jogadores[id_jogador - 1]["pontos"] += 1
-                acertaram.append(jogadores[id_jogador - 1]["nome"])
+        # (com o lock: toda resposta que recebeu OK entra na pontuação)
+        with lock_rodada:
+            rodada_aberta = False
+            acertaram = []
+            for id_jogador in list(respostas):
+                if respostas[id_jogador] == perguntas[n - 1][5]:
+                    jogadores[id_jogador - 1]["pontos"] += 1
+                    acertaram.append(jogadores[id_jogador - 1]["nome"])
  
         # Guarda o resultado oficial; os jogadores o consultam depois via TCP
         placar = ",".join(f"{j['nome']}:{j['pontos']}" for j in jogadores)
@@ -116,100 +124,119 @@ def atender_cliente(conn, addr):
     global partida_iniciada
     buffer = b""
     jogador_id = None  # só ganha valor depois de ENTRAR
-    while True:
-        linha, buffer = ler_mensagem(conn, buffer)
+    try:
+        while True:
+            linha, buffer = ler_mensagem(conn, buffer)
  
-        if linha is None:
-            break
-        # Separa o comando em palavras e registra a mensagem recebida
-        partes = linha.split()
-        tipo = partes[0] if len(partes) > 0 else "VAZIA"
-        registrar("TCP", "RECEBIDO", f"{addr[0]}:{addr[1]}", tipo, linha)
+            if linha is None:
+                break
+            linha = linha.strip()  # tira o \r de clientes que mandam \r\n
+            # Separa o comando em palavras e registra a mensagem recebida
+            partes = linha.split()
+            tipo = partes[0] if len(partes) > 0 else "VAZIA"
+            registrar("TCP", "RECEBIDO", f"{addr[0]}:{addr[1]}", tipo, linha)
  
-        # ENTRAR porta_udp nome -> OK id organizador (o primeiro a entrar é o organizador)
-        if len(partes) > 0 and partes[0] == "ENTRAR" and partida_iniciada:
-            resposta = "ERRO partida_em_andamento"
+            # ENTRAR porta_udp nome -> OK id organizador (o primeiro a entrar é o organizador)
+            if len(partes) > 0 and partes[0] == "ENTRAR" and jogador_id is not None:
+                resposta = "ERRO ja_cadastrado"  # esta conexão já tem um jogador
+
+            elif len(partes) > 0 and partes[0] == "ENTRAR" and partida_iniciada:
+                resposta = "ERRO partida_em_andamento"
+
+            elif len(partes) >= 3 and partes[0] == "ENTRAR" and partes[1].isdecimal() and not 1 <= int(partes[1]) <= 65535:
+                resposta = "ERRO porta_invalida"
  
-        elif len(partes) >= 3 and partes[0] == "ENTRAR" and partes[1].isdigit():
-            with lock:
-                jogadores.append({"nome": " ".join(partes[2:]), "ip": addr[0], "udp_porta": int(partes[1]), "ativo": True, "pontos":0})
-                jogador_id = len(jogadores)
-            registrar("ESTADO", "-", "-", "MUDANCA", f"jogador {jogadores[jogador_id - 1]['nome']} entrou com id {jogador_id}")
-            if jogador_id == 1:
-                resposta = "OK 1 1"
+            elif len(partes) >= 3 and partes[0] == "ENTRAR" and partes[1].isdecimal():
+                with lock:
+                    jogadores.append({"nome": " ".join(partes[2:]), "ip": addr[0], "udp_porta": int(partes[1]), "ativo": True, "pontos":0})
+                    jogador_id = len(jogadores)
+                registrar("ESTADO", "-", "-", "MUDANCA", f"jogador {jogadores[jogador_id - 1]['nome']} entrou com id {jogador_id}")
+                if jogador_id == 1:
+                    resposta = "OK 1 1"
+                else:
+                    resposta = f"OK {jogador_id} 0"
+ 
+            # INICIAR: só o organizador, com pelo menos 3 jogadores ativos
+            elif linha == "INICIAR":
+                if jogador_id != 1:
+                    resposta = "ERRO nao_organizador"
+                elif partida_iniciada:
+                    resposta = "ERRO ja_iniciada"
+                elif sum(1 for j in jogadores if j["ativo"]) < 3:
+                    resposta = "ERRO poucos_jogadores"
+                else:
+                    partida_iniciada = True
+                    resposta = "OK"
+                    partida = threading.Thread(target=controlar_partida, daemon=True)
+                    partida.start()
+                    registrar("ESTADO", "-", "-", "MUDANCA", "partida iniciada pelo organizador")
+ 
+            # PERGUNTA: devolve a pergunta da rodada aberta e o tempo restante
+            elif linha == "PERGUNTA":
+                if not rodada_aberta:
+                    resposta = "ERRO sem_rodada_aberta"
+                else:
+                    p = perguntas[rodada_atual - 1]
+                    segundos = int(tempo_fim - time.time())
+                    resposta = f"PERGUNTA|{rodada_atual}|{p[0]}|{p[1]}|{p[2]}|{p[3]}|{p[4]}|{segundos}"
+ 
+            # RESPONDER rodada alternativa: valida a resposta (uma por jogador por rodada)
+            elif len(partes) == 3 and partes[0] == "RESPONDER":
+                # O lock impede que a rodada feche entre a checagem e a gravação da resposta
+                with lock_rodada:
+                    if jogador_id is None:
+                        resposta = "ERRO nao_cadastrado"
+                    elif not rodada_aberta:
+                        resposta = "ERRO rodada_encerrada"
+                    elif partes[1] != str(rodada_atual):
+                        resposta = "ERRO rodada_invalida"
+                    elif partes[2] not in ("1", "2", "3", "4"):
+                        resposta = "ERRO alternativa_invalida"
+                    elif jogador_id in respostas:
+                        resposta = "ERRO resposta_duplicada"
+                    else:
+                        respostas[jogador_id] = partes[2]
+                        resposta = "OK"
+ 
+            # RESULTADO n: só existe depois que a rodada n foi encerrada
+            elif len(partes) == 2 and partes[0] == "RESULTADO":
+                if partes[1].isdecimal() and int(partes[1]) in resultados:
+                    resposta = resultados[int(partes[1])]
+                else:
+                    resposta = "ERRO rodada_nao_encerrada"
+ 
+            # PLACAR: pontuação atual; depois do fim do jogo inclui os vencedores (empate = vários)
+            elif linha == "PLACAR":
+                lista = jogadores
+                if partida_terminou:
+                    # Classificação final: do maior para o menor número de pontos
+                    lista = sorted(jogadores, key=lambda j: j["pontos"], reverse=True)
+                placar = ",".join(f"{j['nome']}:{j['pontos']}" for j in lista)
+                resposta = "PLACAR|" + placar
+                if partida_terminou:
+                    maior = max(j["pontos"] for j in jogadores)
+                    vencedores = ",".join(j["nome"] for j in jogadores if j["pontos"] == maior)
+                    resposta += f"|FIM|{vencedores}"
             else:
-                resposta = f"OK {jogador_id} 0"
+                resposta = "ERRO comando_desconhecido"
  
-        # INICIAR: só o organizador, com pelo menos 3 jogadores ativos
-        elif linha == "INICIAR":
-            if jogador_id != 1:
-                resposta = "ERRO nao_organizador"
-            elif partida_iniciada:
-                resposta = "ERRO ja_iniciada"
-            elif sum(1 for j in jogadores if j["ativo"]) < 3:
-                resposta = "ERRO poucos_jogadores"
-            else:
-                partida_iniciada = True
-                resposta = "OK"
-                partida = threading.Thread(target=controlar_partida, daemon=True)
-                partida.start()
-                registrar("ESTADO", "-", "-", "MUDANCA", "partida iniciada pelo organizador")
+            # Registra e envia a resposta
+            tipo_resposta = resposta.split("|")[0].split()[0]
+            registrar("TCP", "ENVIADO", f"{addr[0]}:{addr[1]}", tipo_resposta, resposta)
  
-        # PERGUNTA: devolve a pergunta da rodada aberta e o tempo restante
-        elif linha == "PERGUNTA":
-            if not rodada_aberta:
-                resposta = "ERRO sem_rodada_aberta"
-            else:
-                p = perguntas[rodada_atual - 1]
-                segundos = int(tempo_fim - time.time())
-                resposta = f"PERGUNTA|{rodada_atual}|{p[0]}|{p[1]}|{p[2]}|{p[3]}|{p[4]}|{segundos}"
+            conn.sendall((resposta + "\n").encode("utf-8"))
  
-        # RESPONDER rodada alternativa: valida a resposta (uma por jogador por rodada)
-        elif len(partes) == 3 and partes[0] == "RESPONDER":
-            if jogador_id is None:
-                resposta = "ERRO nao_cadastrado"
-            elif not rodada_aberta:
-                resposta = "ERRO rodada_encerrada"
-            elif partes[1] != str(rodada_atual):
-                resposta = "ERRO rodada_invalida"
-            elif partes[2] not in ("1", "2", "3", "4"):
-                resposta = "ERRO alternativa_invalida"
-            elif jogador_id in respostas:
-                resposta = "ERRO resposta_duplicada"
-            else:
-                respostas[jogador_id] = partes[2]
-                resposta = "OK"
+    except (ConnectionResetError, OSError, UnicodeDecodeError) as erro:
+        # Fechamento abrupto (comum no Windows) ou bytes que não são UTF-8 válido
+        registrar("ESTADO", "-", "-", "MUDANCA", f"erro na conexão com {addr[0]}:{addr[1]}: {erro}")
  
-        # RESULTADO n: só existe depois que a rodada n foi encerrada
-        elif len(partes) == 2 and partes[0] == "RESULTADO":
-            if partes[1].isdigit() and int(partes[1]) in resultados:
-                resposta = resultados[int(partes[1])]
-            else:
-                resposta = "ERRO rodada_nao_encerrada"
+    finally:
+        # Conexão encerrada: o jogador fica inativo, mas sua pontuação é mantida
+        if jogador_id is not None:
+            jogadores[jogador_id - 1]["ativo"] = False
+            registrar("ESTADO", "-", "-", "MUDANCA", f"jogador {jogadores[jogador_id - 1]['nome']} saiu (conexão encerrada)")
  
-        # PLACAR: pontuação atual; depois do fim do jogo inclui os vencedores (empate = vários)
-        elif linha == "PLACAR":
-            placar = ",".join(f"{j['nome']}:{j['pontos']}" for j in jogadores)
-            resposta = "PLACAR|" + placar
-            if partida_terminou:
-                maior = max(j["pontos"] for j in jogadores)
-                vencedores = ",".join(j["nome"] for j in jogadores if j["pontos"] == maior)
-                resposta += f"|FIM|{vencedores}"
-        else:
-            resposta = "ERRO comando_desconhecido"
- 
-        # Registra e envia a resposta
-        tipo_resposta = resposta.split("|")[0].split()[0]
-        registrar("TCP", "ENVIADO", f"{addr[0]}:{addr[1]}", tipo_resposta, resposta)
- 
-        conn.sendall((resposta + "\n").encode("utf-8"))
- 
-    # Conexão encerrada: o jogador fica inativo, mas sua pontuação é mantida
-    if jogador_id is not None:
-        jogadores[jogador_id - 1]["ativo"] = False
-        registrar("ESTADO", "-", "-", "MUDANCA", f"jogador {jogadores[jogador_id - 1]['nome']} saiu (conexão encerrada)")
- 
-    conn.close()
+        conn.close()
  
     print(f"Conexão encerrada com {addr}")
  

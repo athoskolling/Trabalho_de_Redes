@@ -7,6 +7,7 @@
  
 import socket
 import threading
+import time
  
 # ---------- Conexão TCP com o servidor ----------
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,14 +21,56 @@ nome = input("Seu nome: ")
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp.bind(("0.0.0.0", 0))  # porta 0: o sistema escolhe uma porta livre (permite vários clientes no mesmo PC)
 porta_udp = udp.getsockname()[1]  # getsockname() devolve (ip, porta)
- 
+
+# ---------- Log do cliente ----------
+arquivo_log = f"cliente_{nome.replace(' ', '_')}.log"  # nome do arquivo sem espaços
+lock_log = threading.Lock()  # evita linhas misturadas no arquivo (duas threads gravam)
+
+
+def tipo_mensagem(texto):
+    # Primeira palavra da mensagem (antes de "|" ou espaço), como no log do servidor.
+    palavras = texto.split("|")[0].split()
+    return palavras[0] if len(palavras) > 0 else "VAZIA"
+
+
+def registrar(protocolo, direcao, quem, tipo, conteudo):
+    # Grava uma linha no log: hora | protocolo | direção | origem/destino | tipo | conteúdo.
+    horario = time.strftime("%H:%M:%S")
+    linha_log = f"{horario} | {protocolo} | {direcao} | {quem} | {tipo} | {conteudo}"
+    with lock_log:
+        arquivo = open(arquivo_log, "a", encoding="utf-8")
+        arquivo.write(linha_log + "\n")
+        arquivo.close()
+
+
+# ---------- Leitura das respostas TCP ----------
+buffer = b""  # bytes recebidos que ainda não formaram uma linha completa
+
+
+def ler_resposta():
+    # Lê do TCP até completar uma linha (TCP é fluxo de bytes, sem fronteira de mensagem).
+    # Devolve a linha sem o \n, ou "" se o servidor fechou a conexão.
+    global buffer
+    while b"\n" not in buffer:
+        dados = client.recv(4096)
+        if not dados:
+            return ""
+        buffer += dados
+
+    linha, buffer = buffer.split(b"\n", 1)
+    resposta = linha.decode("utf-8").strip()
+    registrar("TCP", "RECEBIDO", f"{servidor_ip}:5000", tipo_mensagem(resposta), resposta)
+    return resposta
+
+
 # ---------- Cadastro no servidor ----------
 # Protocolo: ENTRAR porta_udp nome  ->  OK id organizador
 mensagem = f"ENTRAR {porta_udp} {nome}\n"
 client.sendall(mensagem.encode('utf-8'))
- 
-data = client.recv(1024)
-print('Recebido:', data.decode('utf-8'))
+registrar("TCP", "ENVIADO", f"{servidor_ip}:5000", "ENTRAR", mensagem.strip())
+
+data = ler_resposta()
+print('Recebido:', data)
 
 # O socket TCP é usado por duas threads (a do teclado e a dos avisos, que busca a
 # pergunta sozinha). O lock garante que cada envio receba a sua própria resposta.
@@ -38,7 +81,8 @@ def enviar(comando):
     # Envia um comando pelo TCP e devolve a resposta do servidor (sem o \n).
     with lock_tcp:
         client.sendall((comando + "\n").encode('utf-8'))  # o \n marca o fim da mensagem
-        return client.recv(1024).decode('utf-8').strip()
+        registrar("TCP", "ENVIADO", f"{servidor_ip}:5000", tipo_mensagem(comando), comando)
+        return ler_resposta()
 
  
 # ---------- Alternativas por letra ----------
@@ -88,11 +132,18 @@ def escutar_udp():
         dados, origem = udp.recvfrom(1024)
         texto = dados.decode("utf-8")
         partes = texto.split()
+        registrar("UDP", "RECEBIDO", f"{origem[0]}:{origem[1]}", tipo_mensagem(texto), texto)
         print("\n[AVISO]", texto)
         if len(partes) == 2 and partes[0] == "RODADA_ABERTA" and partes[1].isdigit():
             rodada_conhecida = int(partes[1])
             # A pergunta aparece sozinha: o cliente pede a PERGUNTA oficial por TCP
             mostrar_resposta(enviar("PERGUNTA"))
+        elif len(partes) == 2 and partes[0] == "RODADA_ENCERRADA" and partes[1].isdigit():
+            # O resultado aparece sozinho: o cliente pede o RESULTADO oficial por TCP
+            mostrar_resposta(enviar(f"RESULTADO {partes[1]}"))
+        elif texto == "FIM_JOGO":
+            # O placar final aparece sozinho: o cliente pede o PLACAR oficial por TCP
+            mostrar_resposta(enviar("PLACAR"))
  
  
 aviso = threading.Thread(target=escutar_udp, daemon=True)

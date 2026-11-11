@@ -1,14 +1,14 @@
 QUIZ COMPETITIVO EM REDE
 
-Integrantes: Athos Nunes Kolling, Júlia Roos Costa, [nome dos outros nego]
+Integrantes: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele e Luiz Haubert
 
 
 1. TEMA, LINGUAGEM E DEPENDENCIAS
 
 Tema: Opção 1, Quiz competitivo em rede.
-Linguagem: Python 3 ([PREENCHER: versão usada nos testes]). Funciona em Python 3.8 ou superior.
+Linguagem: Python. Funciona em Python 3.8 ou superior.
 Dependências: nenhuma além da biblioteca padrão (socket, threading, time).
-Sistema usado nos testes: [PREENCHER: Windows ou Linux].
+Sistema usado nos testes: Windows.
 
 
 2. ARQUIVOS
@@ -42,7 +42,7 @@ servidor.log: criado pelo servidor ao rodar (log da execução).
    INICIAR: só o organizador, começa a partida.
    sair: encerra o cliente.
 
-6) Os avisos de rodada chegam sozinhos na tela, marcados com [AVISO]. Quando chega o aviso de rodada aberta, o cliente pede a pergunta ao servidor por TCP e a mostra sem o jogador digitar nada. O aviso e a pergunta podem aparecer no meio da linha que você está digitando; isso é só visual, continue digitando e aperte Enter.
+6) Os avisos de rodada chegam sozinhos na tela, marcados com [AVISO]. Quando chega o aviso de rodada aberta, o cliente pede a pergunta ao servidor por TCP e a mostra sem o jogador digitar nada. Do mesmo jeito, no aviso de rodada encerrada ele busca e mostra o RESULTADO da rodada, e no aviso de fim de jogo busca e mostra o PLACAR final. O aviso e a pergunta podem aparecer no meio da linha que você está digitando; isso é só visual, continue digitando e aperte Enter.
 
 Exemplo de rodada no terminal do jogador:
 
@@ -56,6 +56,7 @@ Exemplo de rodada no terminal do jogador:
    > a
    OK
    [AVISO] RODADA_ENCERRADA 1
+   RESULTADO|1|1|Ana,Bruno|Ana:1,Bruno:1,Carla Souza:0
    (5 segundos depois)
    [AVISO] RODADA_ABERTA 2
    Rodada 2: ...
@@ -102,7 +103,7 @@ A porta UDP de cada cliente é informada ao servidor na mensagem ENTRAR. O servi
 ENTRAR <porta_udp> <nome>
   Sucesso: OK <id> <organizador>
   O id é 1, 2, 3... pela ordem de chegada. O organizador é 1 para o primeiro jogador e 0 para os demais.
-  Erro: ERRO partida_em_andamento (partida já iniciada)
+  Erros: ERRO partida_em_andamento (partida já iniciada), ERRO porta_invalida (porta UDP fora de 1 a 65535), ERRO ja_cadastrado (ENTRAR repetido na mesma conexão)
 
 INICIAR
   Sucesso: OK
@@ -124,7 +125,7 @@ RESULTADO <rodada>
 
 PLACAR
   Sucesso: PLACAR|<nome>:<pontos>,<nome>:<pontos>,...
-  Depois do fim do jogo, acrescenta no final: |FIM|<vencedores>
+  Depois do fim do jogo, os jogadores vêm ordenados por pontos, do maior para o menor (classificação), e acrescenta no final: |FIM|<vencedores>
 
 Qualquer outra coisa
   Resposta: ERRO comando_desconhecido
@@ -132,8 +133,8 @@ Qualquer outra coisa
 6.3 Avisos UDP (servidor envia, sem resposta)
 
 RODADA_ABERTA <rodada>: quando uma rodada começa. Ao receber, o cliente envia PERGUNTA por TCP e mostra a pergunta.
-RODADA_ENCERRADA <rodada>: quando a rodada fecha (o resultado já está disponível em RESULTADO).
-FIM_JOGO: depois da última rodada (o placar final está disponível em PLACAR).
+RODADA_ENCERRADA <rodada>: quando a rodada fecha (o resultado já está disponível em RESULTADO). Ao receber, o cliente envia RESULTADO <rodada> por TCP e mostra o resultado.
+FIM_JOGO: depois da última rodada (o placar final está disponível em PLACAR). Ao receber, o cliente envia PLACAR por TCP e mostra o placar final.
 
 O aviso UDP serve só para notificar. Os dados oficiais sempre vêm por TCP, então o jogo funciona mesmo se um datagrama se perder: o jogador pode consultar PERGUNTA, RESULTADO e PLACAR quando quiser.
 
@@ -169,16 +170,17 @@ Fim do jogo:
 
   servidor => FIM_JOGO
   Ana -> PLACAR
-  servidor -> PLACAR|Ana:4,Bruno:6,Carla Souza:6|FIM|Bruno,Carla Souza
+  servidor -> PLACAR|Bruno:6,Carla Souza:6,Ana:4|FIM|Bruno,Carla Souza
 
 
 7. SERVIDOR: CONCORRENCIA E ESTADO
 
 - A thread principal só aceita conexões (accept) e cria uma thread por cliente.
 - Uma thread separada (controlar_partida) conduz as rodadas e o cronômetro.
-- No cliente, duas threads usam o mesmo socket TCP (a do teclado e a dos avisos, que busca a pergunta sozinha). Um Lock garante que cada comando receba a sua própria resposta.
+- No cliente, duas threads usam o mesmo socket TCP (a do teclado e a dos avisos, que busca a pergunta, o resultado e o placar sozinha). Um Lock garante que cada comando receba a sua própria resposta.
 - O estado oficial fica no servidor: lista de jogadores (nome, IP, porta UDP, ativo, pontos), rodada atual, respostas da rodada e resultados já calculados.
 - Um Lock protege o cadastro na lista de jogadores e outro Lock protege a escrita no arquivo de log.
+- Um terceiro Lock (lock_rodada) protege rodada_aberta e as respostas: a checagem e a gravação do RESPONDER e o fechamento da rodada (rodada_aberta = False e cálculo dos pontos) não se intercalam. Assim, toda resposta que recebeu OK é pontuada.
 - O id do jogador é sua posição na lista mais 1. Quem sai da conexão fica ativo = False.
 
 
@@ -203,6 +205,14 @@ Exemplo:
 
 Mudanças de estado registradas: entrada e saída de jogador, início da partida, rodada aberta, rodada encerrada (com o placar) e fim do jogo.
 
+Cada cliente também grava um log no arquivo cliente_<nome>.log (espaços do nome trocados por "_"), no mesmo formato, só no arquivo (não na tela). Ele registra as mensagens TCP enviadas e recebidas (origem/destino = ip:porta do servidor) e os avisos UDP recebidos (origem = ip:porta do servidor).
+
+Exemplo:
+
+  14:02:11 | TCP | ENVIADO | 127.0.0.1:5000 | ENTRAR | ENTRAR 52311 Ana
+  14:02:11 | TCP | RECEBIDO | 127.0.0.1:5000 | OK | OK 1 1
+  14:02:40 | UDP | RECEBIDO | 127.0.0.1:61234 | RODADA_ABERTA | RODADA_ABERTA 1
+
 
 9. TRATAMENTO DE ERROS E LIMITACOES
 
@@ -212,9 +222,6 @@ Mudanças de estado registradas: entrada e saída de jogador, início da partida
   - Não há validação de nomes repetidos nem de nomes com os caracteres "," ":" ou "|".
   - Se o organizador sair antes do início, ninguém mais consegue iniciar.
   - O servidor não aceita reconexão de um jogador durante a partida.
-  - Se um jogador responde e desconecta na mesma rodada, a resposta dele continua contando para "todos os ativos responderam", e a rodada pode fechar antes de outro jogador ativo responder.
-  - O cliente lê cada resposta TCP com um único recv(1024). Funciona porque as respostas são curtas, mas o cliente não acumula bytes até o \n como o servidor faz.
-  - Só o servidor grava log em arquivo; o cliente mostra as mensagens apenas na tela.
   - Uma letra digitada durante a pausa de 5 segundos entre rodadas vai para a rodada que acabou de fechar e recebe ERRO rodada_encerrada; basta digitar de novo quando a nova pergunta aparecer.
   - Se todos os jogadores saírem, as rodadas restantes abrem e fecham na hora (não há ativos para esperar) e o jogo termina.
 
