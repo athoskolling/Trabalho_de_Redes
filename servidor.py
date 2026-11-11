@@ -1,5 +1,5 @@
 # Servidor do Quiz Competitivo em Rede.
-# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa, Murilo Teribele Carvalho, Luiz Eduardo Haubert
+# Integrantes do grupo: Athos Nunes Kolling, Júlia Roos Costa [adiciona os nome]
  
 # - TCP (porta 5000): comandos dos jogadores e respostas oficiais do servidor.
 # - UDP: apenas avisos de eventos (RODADA_ABERTA, RODADA_ENCERRADA, FIM_JOGO).
@@ -127,10 +127,7 @@ def atender_cliente(conn, addr):
         registrar("TCP", "RECEBIDO", f"{addr[0]}:{addr[1]}", tipo, linha)
  
         # ENTRAR porta_udp nome -> OK id organizador (o primeiro a entrar é o organizador)
-        if len(partes) > 0 and partes[0] == "ENTRAR" and jogador_id is not None:
-            resposta = "ERRO ja_cadastrado"  # esta conexão já tem um jogador
-
-        elif len(partes) > 0 and partes[0] == "ENTRAR" and partida_iniciada:
+        if len(partes) > 0 and partes[0] == "ENTRAR" and partida_iniciada:
             resposta = "ERRO partida_em_andamento"
  
         elif len(partes) >= 3 and partes[0] == "ENTRAR" and partes[1].isdigit():
