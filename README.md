@@ -16,7 +16,6 @@ Trabalho Prático 2 de Redes: um quiz de 10 rodadas em que os jogadores mandam o
 8. [Logs](#8-logs)
 9. [Tratamento de erros e limitações](#9-tratamento-de-erros-e-limitações)
 10. [Entrega](#10-entrega)
-11. [Interface web (extra)](#11-interface-web-extra)
 
 ---
 
@@ -29,8 +28,6 @@ Trabalho Prático 2 de Redes: um quiz de 10 rodadas em que os jogadores mandam o
 | **Dependências** | Nenhuma além da biblioteca padrão (`socket`, `threading`, `time`) |
 | **Sistema usado nos testes** | [PREENCHER: Windows ou Linux] |
 
-A interface web (extra, [seção 11](#11-interface-web-extra)) usa também a biblioteca `websockets` e o Node.js.
-
 ---
 
 ## 2. Arquivos
@@ -38,9 +35,6 @@ A interface web (extra, [seção 11](#11-interface-web-extra)) usa também a bib
 ```
 servidor/     servidor.py, cliente.py e perguntas.txt (o trabalho em si)
 roteiros/     roteiro de testes e roteiro de captura no Wireshark
-ponte/        ponte.py (extra)
-interface/    interface web (extra)
-design/       desenho de referência da interface (extra)
 ```
 
 O trabalho em si fica na pasta `servidor/`:
@@ -57,8 +51,6 @@ Formato de cada linha do `perguntas.txt`, em que `correta` é um número de 1 a 
 ```
 pergunta|alt1|alt2|alt3|alt4|correta
 ```
-
-Extras, fora do que o enunciado exige ([seção 11](#11-interface-web-extra)): `ponte/ponte.py`, a pasta `interface/` e os arquivos do Docker (`docker-compose.yml` na raiz e um `Dockerfile` em cada pasta).
 
 ---
 
@@ -298,50 +290,3 @@ O ZIP contém:
 - a captura do Wireshark (`.pcapng`, interface de loopback quando o teste é local)
 
 Os roteiros usados para os testes e para a captura ficam na pasta `roteiros/`.
-
----
-
-## 11. Interface web (extra)
-
-Não faz parte do que o enunciado exige. O `servidor.py` e o protocolo são os mesmos; a interface é só outro cliente.
-
-O navegador não abre socket TCP nem UDP, só WebSocket. Por isso existe a ponte (`ponte/ponte.py`): para cada aba do navegador ela abre um TCP e um UDP até o servidor, como o `cliente.py` faz, e traduz as mensagens para JSON.
-
-```
-navegador <- WebSocket (JSON) -> ponte.py <- TCP + UDP -> servidor.py
-```
-
-**Portas:** a ponte escuta em 8765 (WebSocket) e a página é servida em 5173.
-
-### Com Docker
-
-A partir da raiz do projeto:
-
-```bash
-docker compose up --build
-```
-
-Abra `http://localhost:5173` em 3 abas. No campo de IP do servidor, digite `servidor`.
-
-### Sem Docker
-
-Em três terminais, a partir da raiz do projeto:
-
-```bash
-cd servidor && python servidor.py
-```
-
-```bash
-pip install websockets && python ponte/ponte.py
-```
-
-```bash
-cd interface && npm install && npm run dev
-```
-
-Abra `http://localhost:5173` em 3 abas. No campo de IP do servidor, digite `127.0.0.1`.
-
-### Observações
-
-- A ponte escuta em `localhost` por padrão. Para aceitar navegadores de outras máquinas (é o que o Docker faz), defina a variável de ambiente `HOST_PONTE=0.0.0.0` antes de iniciá-la.
-- O arquivo `interface/README.md` explica o que faz cada arquivo da interface.

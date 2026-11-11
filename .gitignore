@@ -1,5 +1,3 @@
 .venv/
-interface/node_modules/
 servidor.log
 __pycache__/
-interface/dist/

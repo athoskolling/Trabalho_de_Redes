@@ -22,7 +22,7 @@ Este roteiro é um **passo a passo**: siga na ordem, de cima para baixo, digitan
 | [C. A partida](#c-a-partida-rodada-por-rodada) | As 10 rodadas | 4 a 16, 18, 22 a 31 |
 | [D. Conferência do log](#d-conferência-do-log) | Abrir o `servidor.log` | |
 | [E. Se algo der errado](#e-se-algo-der-errado) | Como recomeçar | |
-| [F. Extras](#f-extras-opcionais) | Entre computadores e interface web | |
+| [F. Extras](#f-extras-opcionais) | Entre computadores | |
 | [G. O que entregar](#g-o-que-entregar) | | |
 | [H. Limitações conhecidas](#h-limitações-conhecidas-para-mencionar-se-perguntarem) | | |
 
@@ -335,20 +335,6 @@ Funciona entre computadores que estejam na **mesma rede**. A rede da Unisinos n�
 1. Rode o `servidor.py` em uma máquina e descubra o IP dela com `ip -4 a` (Linux) ou `ipconfig` (Windows).
 2. Libere a porta TCP **5000** no firewall dessa máquina.
 3. Nas outras máquinas, rode `python cliente.py` e digite o IP do servidor no lugar de `127.0.0.1`.
-
-### F.2 Interface web
-
-Não faz parte do que o enunciado exige. A partir da raiz do projeto:
-
-```bash
-docker compose up --build
-```
-
-No Linux, pode ser preciso `sudo` na frente.
-
-Abra `http://localhost:5173` em 3 abas. No campo de IP, digite `servidor`. Em outra máquina, abra `http://IP_DA_ANFITRIA:5173`.
-
-Para rodar sem Docker, veja a seção 11 do `README.md` principal.
 
 ---
 
