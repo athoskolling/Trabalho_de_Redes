@@ -1,22 +1,22 @@
 
 # Cliente do Quiz Competitivo em Rede.
- 
+
 # - TCP: envia os comandos digitados pelo jogador e mostra a resposta do servidor.
 # - UDP: recebe os avisos do servidor (RODADA_ABERTA, RODADA_ENCERRADA, FIM_JOGO) em uma thread separada, para não travar a digitação.
+# Athos Nunes Kolling, Julia Roos Costa, Murilo Teribele Carvalho e Luiz Eduardo Haubert
 
- 
 import socket
 import threading
 import time
- 
+
 # ---------- Conexão TCP com o servidor ----------
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
- 
+
 servidor_ip = input("IP do servidor: ")  # 127.0.0.1 se o servidor estiver no mesmo computador
 client.connect((servidor_ip, 5000))
- 
+
 nome = input("Seu nome: ")
- 
+
 # ---------- Socket UDP para receber avisos ----------
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp.bind(("0.0.0.0", 0))  # porta 0: o sistema escolhe uma porta livre (permite vários clientes no mesmo PC)
@@ -84,7 +84,7 @@ def enviar(comando):
         registrar("TCP", "ENVIADO", f"{servidor_ip}:5000", tipo_mensagem(comando), comando)
         return ler_resposta()
 
- 
+
 # ---------- Alternativas por letra ----------
 # O jogador pode digitar só "a", "b", "c" ou "d"; o cliente converte para
 # "RESPONDER <rodada> <1-4>" antes de enviar. O servidor não muda.
@@ -144,11 +144,11 @@ def escutar_udp():
         elif texto == "FIM_JOGO":
             # O placar final aparece sozinho: o cliente pede o PLACAR oficial por TCP
             mostrar_resposta(enviar("PLACAR"))
- 
- 
+
+
 aviso = threading.Thread(target=escutar_udp, daemon=True)
 aviso.start()
- 
+
 # ---------- Laço principal: comandos do jogador ----------
 # Exemplos: INICIAR, PERGUNTA, a, RESPONDER 1 3, RESPONDER 1 c, RESULTADO 1, PLACAR
 while True:
@@ -159,6 +159,5 @@ while True:
     if comando is None:
         continue
     mostrar_resposta(enviar(comando))
- 
+
 client.close()
- 
