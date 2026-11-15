@@ -1,13 +1,21 @@
-# Parte 2 — Júlia: Controle das rodadas
+# Parte 2 — Júlia: Controle das rodadas e programa principal
 
-**Arquivo:** `servidor.py` (`controlar_partida` e programa principal) — **Tempo: ~2 min**
+**Arquivo:** `servidor.py` (`controlar_partida` e programa principal)
 
 ## Fala
 
-Obrigada, Athos. Eu explico o coração do jogo: o controle das rodadas. Ele roda em uma **thread própria**, para não travar o atendimento dos jogadores.
+Obrigada, Athos. Eu vou explicar o coração do jogo, que é a função `controlar_partida`. Ela roda em **uma thread própria**, para não travar o atendimento dos clientes.
 
-São **10 rodadas**. Em cada uma, o servidor abre a rodada e avisa todo mundo por UDP. Os jogadores têm **20 segundos** para responder, ou menos se todos responderem antes. Depois, o servidor encerra a rodada, confere as respostas, dá **1 ponto por acerto** e guarda o resultado. Então avisa o fim da rodada, espera 5 segundos e começa a próxima. No fim das 10, manda o aviso de fim de jogo.
+Ela faz um laço de **10 rodadas**. Em cada uma, o servidor faz o seguinte:
 
-No programa principal, o servidor fica esperando conexões na porta 5000. A cada jogador que conecta, ele cria **uma thread**, por isso vários jogadores podem jogar ao mesmo tempo.
+1. **Abre a rodada.** Limpa as respostas, define um prazo de **20 segundos** e manda o aviso UDP `RODADA_ABERTA`.
+2. **Espera.** O servidor fica esperando até o tempo acabar **ou até todos os jogadores ativos responderem**. O que vier primeiro encerra a espera.
+3. **Encerra e pontua.** Fecha a rodada e confere as respostas com a alternativa correta, dando **1 ponto por acerto**. Isso acontece dentro do `lock_rodada`. Assim, toda resposta que recebeu OK entra na contagem e nenhuma chega atrasada no meio do cálculo.
+4. **Guarda o resultado oficial.** Monta a mensagem `RESULTADO` com a rodada, a resposta certa, quem acertou e o placar. Depois manda o aviso UDP `RODADA_ENCERRADA`.
+5. **Pausa de 5 segundos** antes da próxima rodada.
 
-Agora o Murilo mostra o que o servidor faz com cada jogador.
+Depois da décima rodada, o servidor marca a partida como terminada e manda o aviso `FIM_JOGO`.
+
+No **programa principal**, o servidor carrega as perguntas e cria o socket TCP. Ele usa `SO_REUSEADDR` para poder reiniciar rápido na mesma porta e escuta em `0.0.0.0`, aceitando conexões de outras máquinas. Depois entra num laço infinito: a cada cliente que conecta, **cria uma thread** só para ele. Por isso vários jogadores podem jogar ao mesmo tempo.
+
+Agora o Murilo mostra o que acontece dentro de cada thread de cliente.
