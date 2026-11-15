@@ -1,6 +1,6 @@
 # Parte 2 — Júlia: Controle das rodadas e programa principal
 
-**Arquivo:** `servidor.py` (`controlar_partida` e programa principal)
+**Arquivo:** `servidor.py` (`controlar_partida` e programa principal) — **Tempo: até 2,5 min**
 
 ## Fala
 

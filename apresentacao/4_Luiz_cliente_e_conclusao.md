@@ -1,6 +1,6 @@
 # Parte 4 — Luiz: Cliente e conclusão
 
-**Arquivo:** `cliente.py`
+**Arquivo:** `cliente.py` — **Tempo: até 2,5 min**
 
 ## Fala
 

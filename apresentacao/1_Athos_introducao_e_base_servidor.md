@@ -1,6 +1,6 @@
 # Parte 1 — Athos: Introdução e base do servidor
 
-**Arquivo:** `servidor.py` (início)
+**Arquivo:** `servidor.py` (início) — **Tempo: até 2,5 min**
 
 ## Fala
 

@@ -1,6 +1,6 @@
 # Parte 3 — Murilo: Atendimento dos clientes
 
-**Arquivo:** `servidor.py` (`atender_cliente`)
+**Arquivo:** `servidor.py` (`atender_cliente`) — **Tempo: até 2,5 min**
 
 ## Fala
 
