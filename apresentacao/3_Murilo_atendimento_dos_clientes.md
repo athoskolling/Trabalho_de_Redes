@@ -1,22 +1,27 @@
 # Parte 3 — Murilo: Atendimento dos clientes
 
-**Arquivo:** `servidor.py` (`atender_cliente`) — **Tempo: até 2,5 min**
+**Arquivo:** `servidor.py` (`atender_cliente`) — **Tempo: ~2,5 min** — leia o texto abaixo do jeito que está.
 
-## Fala
+---
 
-Valeu, Júlia. Eu fico com a função `atender_cliente`. Ela roda uma vez para cada cliente conectado e funciona como o **tradutor do protocolo**: lê um comando, decide a resposta e envia.
+Valeu, Júlia. Eu fico com a função atender cliente, que roda uma vez para cada jogador conectado. Ela funciona como o tradutor do protocolo: lê um comando que chegou pelo TCP, valida, decide a resposta e envia de volta.
 
-O laço lê uma linha, registra no log e verifica qual é o comando. Os comandos são estes:
+Os comandos são seis.
 
-- **ENTRAR porta_udp nome:** cadastra o jogador. Valida se ele já estava cadastrado, se a partida já começou e se a porta é válida. Se der certo, responde `OK id organizador`. **O primeiro a entrar vira o organizador.**
-- **INICIAR:** só o organizador pode usar, e só com **no mínimo 3 jogadores ativos**. Se estiver tudo certo, ele dispara a thread de `controlar_partida` que a Júlia explicou.
-- **PERGUNTA:** devolve a pergunta da rodada aberta, com as quatro alternativas e o tempo restante. Se não tem rodada aberta, dá erro.
-- **RESPONDER rodada alternativa:** é o comando com mais validações. Ele checa se o jogador está cadastrado, se a rodada está aberta, se o número da rodada confere, se a alternativa vai de 1 a 4 e se ele já respondeu. **É uma resposta por jogador por rodada.** Tudo isso fica dentro do `lock_rodada`, para a rodada não fechar entre a checagem e a gravação.
-- **RESULTADO n:** devolve o resultado da rodada n, mas só se ela já foi encerrada.
-- **PLACAR:** mostra a pontuação atual. Depois do fim do jogo, ele ordena do maior para o menor e inclui os **vencedores**. Se houver empate, aparecem vários.
+O primeiro é ENTRAR, que cadastra o jogador. O jogador manda a porta UDP em que quer receber os avisos e o seu nome. O servidor confere se esse jogador já está cadastrado, se a partida já começou e se a porta é válida. Se estiver tudo certo, responde OK com o número do jogador. O primeiro jogador que entra é automaticamente o organizador da partida.
 
-Qualquer outro comando recebe `ERRO comando_desconhecido`.
+O segundo é INICIAR. Só o organizador pode usar, e só quando já existem pelo menos três jogadores ativos. Se as condições forem atendidas, o servidor responde OK e dispara a thread de controle das rodadas que a Júlia acabou de explicar.
 
-No final, o bloco `finally` trata a saída do jogador. Se a conexão cair, ele fica **inativo, mas a pontuação dele é mantida**. Os erros de conexão, como fechamento abrupto no Windows, também são tratados para o servidor não cair.
+O terceiro é PERGUNTA. Ele devolve a pergunta da rodada que está aberta, com as quatro alternativas e quantos segundos ainda faltam. Se não existir rodada aberta, o servidor responde com erro.
 
-Agora o Luiz apresenta o lado do cliente.
+O quarto é RESPONDER, que é o comando com mais validações. O servidor verifica se o jogador está cadastrado, se a rodada ainda está aberta, se o número da rodada está certo, se a alternativa é de um a quatro e se aquele jogador ainda não tinha respondido. Cada jogador só pode responder uma vez por rodada. Tudo isso acontece dentro do mesmo lock usado no fechamento da rodada, para a rodada não fechar bem no meio da checagem.
+
+O quinto é RESULTADO, que devolve o resultado de uma rodada, mas só depois que ela foi encerrada.
+
+E o sexto é PLACAR, que mostra a pontuação de todos. Depois do fim do jogo, o placar vem ordenado do maior para o menor e informa o vencedor, ou os vencedores, se houver empate.
+
+Qualquer comando que não esteja nessa lista recebe a resposta de comando desconhecido.
+
+Por fim, se a conexão de um jogador cair, o servidor trata o erro sem derrubar a partida. O jogador passa a ficar inativo, mas a pontuação dele é mantida.
+
+Agora o Luiz apresenta o cliente.

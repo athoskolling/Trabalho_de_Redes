@@ -1,30 +1,19 @@
 # Parte 4 — Luiz: Cliente e conclusão
 
-**Arquivo:** `cliente.py` — **Tempo: até 2,5 min**
+**Arquivo:** `cliente.py` — **Tempo: ~2,5 min** — leia o texto abaixo do jeito que está.
 
-## Fala
+---
 
-Obrigado, Murilo. Eu apresento o **cliente**, que é o programa que o jogador usa.
+Obrigado, Murilo. Eu apresento o cliente, que é o programa que o jogador usa.
 
-Ao iniciar, ele pede o **IP do servidor** e o **nome** do jogador, e conecta por TCP na porta 5000. Depois cria um socket **UDP com porta 0**, o que faz o sistema escolher uma porta livre. Isso permite abrir vários clientes no mesmo computador. Essa porta é enviada ao servidor no comando `ENTRAR`.
+Quando o cliente inicia, ele pede o endereço IP do servidor e o nome do jogador, e conecta por TCP na porta 5000. Depois, ele cria um socket UDP e deixa o sistema escolher uma porta livre. Isso permite abrir vários clientes no mesmo computador, cada um com a sua porta. Essa porta é enviada ao servidor no comando ENTRAR, para que o servidor saiba para onde mandar os avisos. O cliente também mantém o seu próprio arquivo de log, com o mesmo formato do log do servidor.
 
-Cada cliente também tem o seu **arquivo de log**, com a mesma estrutura do log do servidor.
+O cliente trabalha com duas threads. Uma lê o que o jogador digita no teclado. A outra fica escutando os avisos UDP. Assim, a digitação nunca fica travada esperando um aviso.
 
-Sobre as funções:
+A parte mais interessante é o que o cliente faz quando chega um aviso, porque ele reage sozinho. Quando chega o aviso de rodada aberta, ele pede a pergunta oficial ao servidor por TCP e mostra na tela, com as alternativas a, b, c e d. Quando chega o aviso de rodada encerrada, ele pede o resultado daquela rodada. E quando chega o aviso de fim de jogo, ele pede o placar final. Isso mostra bem a divisão do projeto: o UDP avisa que algo aconteceu, e o TCP entrega a informação confiável.
 
-- A `ler_resposta` faz o mesmo que o servidor: lê do TCP com buffer até completar uma linha.
-- A `enviar` manda um comando e devolve a resposta. Ela usa um **lock**, porque duas threads usam o mesmo socket TCP, a do teclado e a dos avisos. Sem o lock, uma poderia ler a resposta da outra.
-- A `traduzir_comando` é uma facilidade pro jogador. Em vez de `RESPONDER 1 3`, ele digita só **a, b, c ou d**, e o cliente converte para o formato do protocolo. O servidor não precisa mudar.
-- A `mostrar_resposta` formata a pergunta na tela, com as alternativas a), b), c) e d) e o tempo restante.
+Para facilitar para o jogador, ele não precisa digitar o comando completo. Basta digitar a letra da alternativa, a, b, c ou d, e o cliente converte para o formato do protocolo, com o número da rodada e a alternativa. O servidor não precisa saber dessa facilidade. Como as duas threads usam o mesmo socket TCP, o envio dos comandos é protegido por um lock, para que cada comando receba a sua própria resposta e uma thread não leia a resposta da outra.
 
-A parte mais interessante é a `escutar_udp`, que roda em **uma thread separada** para não travar a digitação. Quando chega um aviso, o cliente reage sozinho:
+Digitando a palavra sair, o jogador encerra o programa.
 
-- `RODADA_ABERTA`: pede a **PERGUNTA** oficial por TCP e mostra na tela.
-- `RODADA_ENCERRADA`: pede o **RESULTADO** da rodada.
-- `FIM_JOGO`: pede o **PLACAR** final.
-
-Isso mostra bem a divisão do projeto. O **UDP avisa** que algo aconteceu e o **TCP entrega a informação confiável**.
-
-Por fim, o laço principal lê o que o jogador digita, traduz o comando, envia e mostra a resposta. Digitando `sair`, o cliente fecha a conexão.
-
-Para concluir: o projeto combina **TCP e UDP**, **threads**, **locks** para evitar condições de corrida e um **protocolo de texto** simples, tudo com log completo dos eventos. Obrigado, ficamos à disposição para perguntas.
+Para concluir: o projeto usa TCP para dados confiáveis, UDP para avisos rápidos, threads para atender vários jogadores ao mesmo tempo, locks para evitar conflitos e logs para acompanhar tudo o que acontece. Obrigado pela atenção, e ficamos à disposição para perguntas.
